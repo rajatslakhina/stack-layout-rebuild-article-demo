@@ -19,6 +19,13 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build with warnings as errors
         run: swift build -Xswiftc -warnings-as-errors
+      - name: Pin the engine line count the article quotes
+        run: |
+          COUNT=$(cat Sources/StackLayoutCore/LayoutChild.swift \
+                      Sources/StackLayoutCore/StackLayout.swift \
+                    | grep -vE '^[[:space:]]*(//|$)' | wc -l | tr -d ' ')
+          echo "engine non-comment lines: $COUNT"
+          test "$COUNT" -eq 159
       - name: Test
         run: swift test
 
