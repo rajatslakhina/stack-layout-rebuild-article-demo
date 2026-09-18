@@ -8,8 +8,8 @@ The point is not the layout engine. The point is what the exercise produces: **a
 specific inputs on which choosing wrong is invisible.** You cannot review code against a rule
 you have not rebuilt.
 
-Article: *"I Rebuilt HStack in 159 Lines. 14 of 24 Layouts Disagreed With the Version I Would Have
-Approved."* — link added here once it publishes.
+Article: **[I Rebuilt HStack in 159 Lines. 14 of 24 Layouts Disagreed With the Version I Would Have
+Approved.](https://medium.com/@er.rajatlakhina/i-rebuilt-hstack-in-159-lines-14-of-24-layouts-disagreed-with-the-version-i-would-have-approved-c240e11b93d0)**
 
 ---
 
