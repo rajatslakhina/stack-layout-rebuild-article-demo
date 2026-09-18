@@ -18,8 +18,11 @@ public enum ProposedWidth: Sendable, Hashable {
 ///
 /// Every case sanitises its own stored numbers inside ``width(for:)`` rather
 /// than at construction time, because enum cases cannot run a validating
-/// initialiser. Negative, NaN and reversed bounds are all handled there, so no
-/// call site can hand the allocator a poisoned number.
+/// initialiser. Negative, NaN, infinite and reversed bounds are all repaired
+/// there, so the width this type reports is always non-negative, and always
+/// finite except for an unbounded proposal on a genuinely unbounded maximum.
+/// The one number this type does not own is the stack's spacing; ``StackLayout``
+/// sanitises that.
 public enum LayoutChild: Sendable, Hashable {
     /// A view that reports the same width whatever it is proposed —
     /// an icon, a fixed-width badge, a `.frame(width:)` modifier.
@@ -89,17 +92,21 @@ public enum LayoutChild: Sendable, Hashable {
 
     // MARK: - Sanitising
 
-    /// Maps NaN and negatives to `0`; leaves `.infinity` alone.
+    /// Lower bounds and fixed widths must be finite: an infinite frame is not
+    /// a layout, it is a bug that renders as a blank screen. NaN, `.infinity`
+    /// and negatives all collapse to `0`.
     private static func floored(_ value: Double) -> Double {
-        guard !value.isNaN else { return 0 }
+        guard value.isFinite else { return 0 }
         return Swift.max(0, value)
     }
 
-    /// Floors `value`, then raises it to `lowerBound` if the bounds were
-    /// supplied reversed. Preserves `.infinity`.
+    /// Upper bounds are the one place `.infinity` is meaningful — that is what
+    /// a `Spacer` is — so it survives here. Reversed bounds are repaired by
+    /// raising the maximum to the minimum rather than trapping.
     private static func ceiling(_ value: Double, notBelow lowerBound: Double) -> Double {
-        let floored = Self.floored(value)
-        return Swift.max(floored, lowerBound)
+        guard !value.isNaN else { return lowerBound }
+        guard value.isFinite else { return .infinity }
+        return Swift.max(Swift.max(0, value), lowerBound)
     }
 
     private static func clamp(_ value: Double, _ lo: Double, _ hi: Double) -> Double {

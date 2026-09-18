@@ -65,12 +65,13 @@ public enum AllocationStrategy: String, Sendable, CaseIterable {
 /// the whole point of the exercise is that the allocation rule is a piece of
 /// arithmetic you can hold in your head, write down, and test.
 public struct StackLayout: Sendable, Hashable {
-    /// Gap inserted between adjacent children. Negative and NaN values are
-    /// treated as `0`.
+    /// Gap inserted between adjacent children. Negative, NaN and infinite
+    /// values are all treated as `0` — infinite spacing would push every frame
+    /// after the first to `x == .infinity`, which renders as a blank row.
     public let spacing: Double
 
     public init(spacing: Double = 8) {
-        self.spacing = spacing.isNaN ? 0 : Swift.max(0, spacing)
+        self.spacing = spacing.isFinite ? Swift.max(0, spacing) : 0
     }
 
     /// Lay `children` out inside `containerWidth` using `strategy`.
