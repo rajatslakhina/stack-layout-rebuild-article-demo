@@ -82,7 +82,9 @@ public struct StackLayout: Sendable, Hashable {
         in containerWidth: Double,
         using strategy: AllocationStrategy
     ) -> LayoutResult {
-        let container = containerWidth.isNaN ? 0 : Swift.max(0, containerWidth)
+        // An unbounded container is not a layout, it is a sizing question, so
+        // treat it as zero rather than letting `.infinity` reach the frames.
+        let container = containerWidth.isFinite ? Swift.max(0, containerWidth) : 0
         guard !children.isEmpty else {
             return LayoutResult(frames: [], containerWidth: container)
         }
