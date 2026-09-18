@@ -8,6 +8,64 @@ final class DivergenceReportTests: XCTestCase {
 
     private let report = DivergenceReport.compare()
 
+    /// Prints the whole comparison so that `swift test` on a fresh clone shows
+    /// the report, not just a row of green ticks. The assertions below keep it
+    /// from silently degrading into a print statement.
+    func testTheSuitePrintsItsDivergenceReport() {
+        func pad(_ text: String, _ width: Int) -> String {
+            text.count >= width
+                ? String(text.prefix(width))
+                : text + String(repeating: " ", count: width - text.count)
+        }
+        func num(_ value: Double, _ width: Int) -> String {
+            let text = String(format: "%.1f", value)
+            return text.count >= width
+                ? text
+                : String(repeating: " ", count: width - text.count) + text
+        }
+
+        let summary = DivergenceReport.summary(for: report)
+        var out = ["", "StackLayoutRebuild — divergence report", String(repeating: "─", count: 76),
+                   pad("scenario", 32) + pad("verdict", 26) + pad("max Δ", 8) + "   even overflow"]
+        let headerCount = out.count
+
+        for divergence in report {
+            let verdict: String
+            if divergence.isIdentical {
+                verdict = "identical"
+            } else if divergence.evenSplit.overflow > DivergenceReport.tolerance {
+                verdict = "diverges — overflows"
+            } else {
+                verdict = "diverges — renders clean"
+            }
+            out.append(pad(divergence.scenario.id, 32)
+                       + pad(verdict, 26)
+                       + num(divergence.maxWidthDelta, 8)
+                       + num(divergence.evenSplit.overflow, 16))
+        }
+
+        out.append(String(repeating: "─", count: 76))
+        out.append("\(summary.total) scenarios · \(summary.identical) identical · \(summary.divergent) diverge")
+        out.append("of the \(summary.divergent) divergences, "
+                   + "\(report.filter { !$0.isIdentical && $0.evenSplit.overflow > DivergenceReport.tolerance }.count)"
+                   + " overflow and "
+                   + "\(report.filter { !$0.isIdentical && $0.evenSplit.overflow <= DivergenceReport.tolerance }.count)"
+                   + " render clean")
+        out.append("worst single-child difference: " + num(summary.worstWidthDelta, 0) + "pt")
+        out.append("")
+
+        let text = out.joined(separator: "\n")
+        print(text)
+
+        let rows = out.dropFirst(headerCount).prefix(report.count)
+        XCTAssertEqual(rows.count, 24, "one printed row per scenario")
+        XCTAssertEqual(rows.filter { $0.contains("diverges") }.count, 14)
+        XCTAssertEqual(rows.filter { $0.contains("identical") }.count, 10)
+        XCTAssertTrue(text.contains("24 scenarios · 10 identical · 14 diverge"))
+        XCTAssertTrue(text.contains("of the 14 divergences, 2 overflow and 12 render clean"))
+        XCTAssertTrue(text.contains("badge-then-long-text"))
+    }
+
     func testSuiteSizeIsTwentyFourScenarios() {
         XCTAssertEqual(report.count, 24)
         XCTAssertEqual(ScenarioLibrary.all.count, 24)
@@ -50,8 +108,11 @@ final class DivergenceReportTests: XCTestCase {
         // The headline is the point: the even split does not overflow here.
         // It under-fills, and the label truncates 161pt early.
         XCTAssertEqual(worst.evenSplit.overflow, 0, accuracy: 0.001)
-        XCTAssertEqual(worst.ordered.frames[1].width, 266, accuracy: 0.001)
+        XCTAssertEqual(worst.ordered.frames[0].width, 38, accuracy: 0.001, "the badge")
+        XCTAssertEqual(worst.ordered.frames[1].width, 266, accuracy: 0.001, "the headline")
+        XCTAssertEqual(worst.ordered.frames[2].width, 10, accuracy: 0.001, "the dot")
         XCTAssertEqual(worst.evenSplit.frames[1].width, 104.6666, accuracy: 0.001)
+        XCTAssertEqual(worst.scenario.containerWidth, 330, accuracy: 0.001)
     }
 
     func testTwelveOfTheFourteenDivergencesAreInvisibleToAnOverflowCheck() {
