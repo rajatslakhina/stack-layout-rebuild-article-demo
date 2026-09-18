@@ -8,7 +8,8 @@ The point is not the layout engine. The point is what the exercise produces: **a
 specific inputs on which choosing wrong is invisible.** You cannot review code against a rule
 you have not rebuilt.
 
-Article: [How I Rebuilt HStack in 120 Lines](#) *(link added after publish)*
+Article: *"I Rebuilt HStack in 158 Lines. 14 of 24 Layouts Disagreed With the Version I Would Have
+Approved."* — link added here once it publishes.
 
 ---
 
@@ -24,11 +25,15 @@ Run `swift test` and the suite reports:
 | Divergences that overflow the container | 2 |
 | **Divergences that render clean and wrong** | **12** |
 | Worst single-child width difference | **161.3pt** |
-| Worst container overflow | 18.7pt |
+| Worst overflow the even split introduces | 18.7pt |
 
-The last two rows are the whole argument. Only 2 of the 14 disagreements produce an overflow —
+The last three rows are the whole argument. Only 2 of the 14 disagreements produce an overflow —
 something an automated check, a snapshot diff, or a human eye can catch. The other 12 lay out
 inside the container, look completely normal, and are wrong by up to 161 points.
+
+(The even split overflows in 4 scenarios overall, but in 2 of those the ordered rule overflows
+too, because the minimum widths genuinely do not fit. Those 2 are a limit, not a bug, and
+`testTheEvenSplitOverflowsFourScenariosAndTheOrderedRuleTwo` pins both counts.)
 
 ## The two rules
 
@@ -93,7 +98,14 @@ row looks fine.
 | `Sources/StackLayoutCore/Scenario.swift` | The 24 hand-written scenarios, so the numbers here, in the tests and in the demo are the same numbers |
 | `Sources/StackLayoutCore/DivergenceReport.swift` | The instrument: runs both rules and reports where they part company |
 | `Sources/StackLayoutUI/RebuildComparisonView.swift` | SwiftUI comparison view — both results drawn to scale, divergent children highlighted |
-| `Tests/StackLayoutCoreTests/` | 23 tests. Every number quoted above is pinned by one of them |
+| `Tests/StackLayoutCoreTests/` | 24 tests. Every number quoted above is pinned by one of them |
+
+The engine itself is 158 non-comment, non-blank lines:
+
+```bash
+cat Sources/StackLayoutCore/LayoutChild.swift Sources/StackLayoutCore/StackLayout.swift \
+  | grep -vE '^\s*(//|$)' | wc -l
+```
 
 ## How to run it
 
@@ -115,7 +127,7 @@ of the article.
 **Done:**
 
 - `swift build -Xswiftc -warnings-as-errors` — clean, zero warnings (Swift 6.0.3, Linux aarch64, language mode 6)
-- `swift test` — **23 of 23 passing**
+- `swift test` — **24 of 24 passing**
 - `Demo.xcodeproj/project.pbxproj` validated programmatically: braces and parens balanced, all 24 object ids defined, zero dangling references
 - `Demo.xcodeproj/xcshareddata/xcschemes/Demo.xcscheme` parsed as XML
 - `Demo/DemoApp.swift` and `Sources/StackLayoutUI/RebuildComparisonView.swift` both `swiftc -parse` clean
@@ -127,7 +139,11 @@ of the article.
   applications — the only `computer`-style tools present were scoped to browser tabs. Xcode was
   never opened. `Demo/Screenshots/` is deliberately empty and says so.
 - Consequently `StackLayoutUI` has been parsed and type-checked as part of a Linux build, but
-  has never been seen rendering on a device.
+  has never been seen rendering on a device. It also has no tests: the test target covers
+  `StackLayoutCore` only, so every verified number above comes from the engine, not the view.
+- The rebuilt rule has not been diffed against a live SwiftUI render. The comparison this repo
+  makes is between the rebuild and the plausible-but-wrong even split — which is the comparison
+  the argument needs, but it is not a claim about what Apple's implementation does internally.
 
 The CI workflow in `.github/workflows/ci.yml` builds the library on Linux and macOS and builds
 `Demo.xcodeproj` for a generic iOS Simulator destination, which is the closest thing to a
