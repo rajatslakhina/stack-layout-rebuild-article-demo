@@ -88,14 +88,43 @@ final class DivergenceReportTests: XCTestCase {
         }
     }
 
-    func testIdenticalScenariosReallyProduceIdenticalFrames() {
+    /// Literal expected widths for every scenario the two rules agree on.
+    ///
+    /// Asserting `isIdentical` implies identical frames would be vacuous —
+    /// `isIdentical` is *defined* as "no width differs by more than
+    /// `tolerance`". These are the actual numbers instead, so gutting the
+    /// allocator fails the test.
+    private static let agreedWidths: [String: [Double]] = [
+        "two-labels-equal": [146, 146],
+        "three-buttons-tight": [100, 90, 96],
+        "single-fixed": [140],
+        "single-flexible": [300],
+        "empty-stack": [],
+        "spacing-exceeds-container": [10, 10, 10],
+        "wide-container-all-satisfied": [120, 120, 120],
+        "stepper-row": [32, 40, 32],
+        "min-width-floor-bites": [126, 126],
+        "exact-fit": [100, 100, 100]
+    ]
+
+    func testEveryAgreedScenarioProducesItsExpectedWidthsUnderBothRules() {
+        let identical = report.filter(\.isIdentical).map(\.scenario.id)
+        XCTAssertEqual(Set(identical), Set(Self.agreedWidths.keys),
+                       "the set of scenarios the two rules agree on has changed")
+
         for divergence in report where divergence.isIdentical {
-            XCTAssertEqual(divergence.ordered.frames.count,
-                           divergence.evenSplit.frames.count,
-                           divergence.scenario.id)
-            for (a, b) in zip(divergence.ordered.frames, divergence.evenSplit.frames) {
-                XCTAssertEqual(a.width, b.width, accuracy: DivergenceReport.tolerance, divergence.scenario.id)
-                XCTAssertEqual(a.x, b.x, accuracy: DivergenceReport.tolerance, divergence.scenario.id)
+            guard let expected = Self.agreedWidths[divergence.scenario.id] else {
+                XCTFail("no expectation for \(divergence.scenario.id)")
+                continue
+            }
+            for result in [divergence.ordered, divergence.evenSplit] {
+                XCTAssertEqual(result.frames.count, expected.count, divergence.scenario.id)
+                guard result.frames.count == expected.count else { continue }
+                for index in expected.indices {
+                    XCTAssertEqual(result.frames[index].width, expected[index],
+                                   accuracy: 0.001,
+                                   "\(divergence.scenario.id)[\(index)]")
+                }
             }
         }
     }

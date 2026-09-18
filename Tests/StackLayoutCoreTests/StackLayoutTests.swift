@@ -125,6 +125,20 @@ final class StackLayoutTests: XCTestCase {
         XCTAssertEqual(result.frames[2].width, 90, accuracy: 0.001)
     }
 
+    func testAnInfiniteContainerWidthDoesNotProduceInfiniteFrames() {
+        for strategy in AllocationStrategy.allCases {
+            let result = StackLayout(spacing: 8).frames(
+                for: [.flexible(name: "Fill", minWidth: 0, maxWidth: .infinity),
+                      .fixed(name: "Pin", width: 40)],
+                in: .infinity, using: strategy)
+            for frame in result.frames {
+                XCTAssertTrue(frame.width.isFinite, "\(frame.name) width was not finite")
+                XCTAssertTrue(frame.x.isFinite, "\(frame.name) x was not finite")
+            }
+            XCTAssertTrue(result.usedWidth.isFinite)
+        }
+    }
+
     func testFullyFlexibleChildTakesTheWholeContainer() {
         for strategy in AllocationStrategy.allCases {
             let result = StackLayout(spacing: 8)
