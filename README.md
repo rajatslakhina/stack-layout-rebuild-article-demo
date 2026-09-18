@@ -98,7 +98,7 @@ row looks fine.
 | `Sources/StackLayoutCore/Scenario.swift` | The 24 hand-written scenarios, so the numbers here, in the tests and in the demo are the same numbers |
 | `Sources/StackLayoutCore/DivergenceReport.swift` | The instrument: runs both rules and reports where they part company |
 | `Sources/StackLayoutUI/RebuildComparisonView.swift` | SwiftUI comparison view — both results drawn to scale, divergent children highlighted |
-| `Tests/StackLayoutCoreTests/` | 27 tests. Every number quoted above is pinned by one of them |
+| `Tests/StackLayoutCoreTests/` | 28 tests. Every layout number quoted above is pinned by one of them; the 159-line total is pinned by the CI gate. One test prints the whole report |
 
 The engine itself is 159 non-comment, non-blank lines:
 
@@ -127,7 +127,7 @@ of the article.
 **Done:**
 
 - `swift build -Xswiftc -warnings-as-errors` — clean, zero warnings (Swift 6.0.3, Linux aarch64, language mode 6)
-- `swift test` — **27 of 27 passing**
+- `swift test` — **28 of 28 passing**
 - `Demo.xcodeproj/project.pbxproj` validated programmatically: braces and parens balanced, all 24 object ids defined, zero dangling references
 - `Demo.xcodeproj/xcshareddata/xcschemes/Demo.xcscheme` parsed as XML
 - `Demo/DemoApp.swift` and `Sources/StackLayoutUI/RebuildComparisonView.swift` both `swiftc -parse` clean
