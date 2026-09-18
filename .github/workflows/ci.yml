@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux:
+    name: Linux (Swift 6.0)
+    runs-on: ubuntu-latest
+    container: swift:6.0-jammy
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build with warnings as errors
+        run: swift build -Xswiftc -warnings-as-errors
+      - name: Test
+        run: swift test
+
+  macos:
+    name: macOS (build + test + iOS Simulator build)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build package
+        run: swift build
+      - name: Test package
+        run: swift test
+      - name: Build the Demo app for the iOS Simulator
+        run: |
+          xcodebuild build \
+            -project Demo.xcodeproj \
+            -scheme Demo \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO
