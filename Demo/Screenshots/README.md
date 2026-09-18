@@ -9,5 +9,5 @@ ship an image that was never captured, this folder is left empty and the omissio
 the repository README's "Verification status" section.
 
 What *was* verified is listed there too: a zero-warning `swift build -Xswiftc -warnings-as-errors`,
-27 passing tests on Swift 6.0.3, a programmatically validated `project.pbxproj`, and a
+28 passing tests on Swift 6.0.3, a programmatically validated `project.pbxproj`, and a
 `swiftc -parse` clean bill on both SwiftUI sources.
