@@ -8,7 +8,7 @@ The point is not the layout engine. The point is what the exercise produces: **a
 specific inputs on which choosing wrong is invisible.** You cannot review code against a rule
 you have not rebuilt.
 
-Article: *"I Rebuilt HStack in 158 Lines. 14 of 24 Layouts Disagreed With the Version I Would Have
+Article: *"I Rebuilt HStack in 159 Lines. 14 of 24 Layouts Disagreed With the Version I Would Have
 Approved."* — link added here once it publishes.
 
 ---
@@ -93,14 +93,14 @@ row looks fine.
 
 | Path | What it is |
 |---|---|
-| `Sources/StackLayoutCore/LayoutChild.swift` | The three subview shapes and their flexibility, with every number sanitised at the point of use (NaN, negatives and reversed bounds included) |
+| `Sources/StackLayoutCore/LayoutChild.swift` | The three subview shapes and their flexibility, with every number sanitised at the point of use (NaN, negatives, infinities and reversed bounds) |
 | `Sources/StackLayoutCore/StackLayout.swift` | Both allocation rules, and the placement pass |
 | `Sources/StackLayoutCore/Scenario.swift` | The 24 hand-written scenarios, so the numbers here, in the tests and in the demo are the same numbers |
 | `Sources/StackLayoutCore/DivergenceReport.swift` | The instrument: runs both rules and reports where they part company |
 | `Sources/StackLayoutUI/RebuildComparisonView.swift` | SwiftUI comparison view — both results drawn to scale, divergent children highlighted |
-| `Tests/StackLayoutCoreTests/` | 24 tests. Every number quoted above is pinned by one of them |
+| `Tests/StackLayoutCoreTests/` | 27 tests. Every number quoted above is pinned by one of them |
 
-The engine itself is 158 non-comment, non-blank lines:
+The engine itself is 159 non-comment, non-blank lines:
 
 ```bash
 cat Sources/StackLayoutCore/LayoutChild.swift Sources/StackLayoutCore/StackLayout.swift \
@@ -127,7 +127,7 @@ of the article.
 **Done:**
 
 - `swift build -Xswiftc -warnings-as-errors` — clean, zero warnings (Swift 6.0.3, Linux aarch64, language mode 6)
-- `swift test` — **24 of 24 passing**
+- `swift test` — **27 of 27 passing**
 - `Demo.xcodeproj/project.pbxproj` validated programmatically: braces and parens balanced, all 24 object ids defined, zero dangling references
 - `Demo.xcodeproj/xcshareddata/xcschemes/Demo.xcscheme` parsed as XML
 - `Demo/DemoApp.swift` and `Sources/StackLayoutUI/RebuildComparisonView.swift` both `swiftc -parse` clean
