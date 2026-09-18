@@ -63,17 +63,79 @@ final class StackLayoutTests: XCTestCase {
     }
 
     func testEqualFlexibilityTiesFallBackToDeclarationOrder() {
-        // Both children are identical, so the result must be symmetric and
-        // must not depend on how the sort happens to break ties.
+        // Both children have a flexibility of exactly 120, so the tie-break is
+        // the only thing deciding the outcome — and here it genuinely decides
+        // it. "Second" cannot go below 100, so whoever is sized second eats
+        // the shortfall. Declaration order gives 76/100; resolving the tie the
+        // other way gives 52/100, which is what
+        // `testReversingTheTieBreakChangesTheResult` pins.
         let children: [LayoutChild] = [
-            .text(name: "Left", minWidth: 40, idealWidth: 160),
-            .text(name: "Right", minWidth: 40, idealWidth: 160)
+            .text(name: "First", minWidth: 40, idealWidth: 160),
+            .text(name: "Second", minWidth: 100, idealWidth: 220)
+        ]
+        XCTAssertEqual(children[0].flexibility, children[1].flexibility, accuracy: 0.001)
+
+        let result = StackLayout(spacing: 8)
+            .frames(for: children, in: 160, using: .flexibilityOrdered)
+
+        XCTAssertEqual(result.frames[0].width, 76, accuracy: 0.001)
+        XCTAssertEqual(result.frames[1].width, 100, accuracy: 0.001)
+    }
+
+    func testReversingTheTieBreakChangesTheResult() {
+        // Declaring the same two children the other way round swaps which one
+        // absorbs the shortfall. If this produced the same widths as the test
+        // above, the tie-break would be doing nothing.
+        let reversed: [LayoutChild] = [
+            .text(name: "Second", minWidth: 100, idealWidth: 220),
+            .text(name: "First", minWidth: 40, idealWidth: 160)
         ]
         let result = StackLayout(spacing: 8)
+            .frames(for: reversed, in: 160, using: .flexibilityOrdered)
+
+        XCTAssertEqual(result.frames[0].width, 100, accuracy: 0.001)
+        XCTAssertEqual(result.frames[1].width, 52, accuracy: 0.001)
+    }
+
+    func testInfiniteSpacingDoesNotPushFramesToInfinity() {
+        let children: [LayoutChild] = [
+            .fixed(name: "A", width: 40),
+            .fixed(name: "B", width: 40),
+            .fixed(name: "C", width: 40)
+        ]
+        let result = StackLayout(spacing: .infinity)
             .frames(for: children, in: 300, using: .flexibilityOrdered)
 
-        XCTAssertEqual(result.frames[0].width, result.frames[1].width, accuracy: 0.001)
-        XCTAssertEqual(result.frames[0].width, 146, accuracy: 0.001)
+        for frame in result.frames {
+            XCTAssertTrue(frame.x.isFinite, "\(frame.name) x was not finite")
+            XCTAssertTrue(frame.width.isFinite, "\(frame.name) width was not finite")
+        }
+        XCTAssertEqual(result.frames.map(\.x), [0, 40, 80])
+    }
+
+    func testInfiniteChildBoundsAreRepairedRatherThanPropagated() {
+        let poisoned: [LayoutChild] = [
+            .fixed(name: "InfiniteFixed", width: .infinity),
+            .flexible(name: "InfiniteMinimum", minWidth: .infinity, maxWidth: .infinity),
+            .text(name: "InfiniteIdeal", minWidth: 20, idealWidth: .infinity)
+        ]
+        for strategy in AllocationStrategy.allCases {
+            let result = StackLayout(spacing: 8)
+                .frames(for: poisoned, in: 300, using: strategy)
+            for frame in result.frames {
+                XCTAssertTrue(frame.width.isFinite, "\(frame.name) width was not finite")
+                XCTAssertTrue(frame.x.isFinite, "\(frame.name) x was not finite")
+            }
+            XCTAssertTrue(result.usedWidth.isFinite)
+        }
+
+        // An infinite fixed width is meaningless, so it collapses to zero.
+        XCTAssertEqual(LayoutChild.fixed(name: "x", width: .infinity).width(for: .zero), 0, accuracy: 0.001)
+        // An infinite *minimum* collapses, but an infinite maximum is a Spacer
+        // and must survive.
+        let spacerish = LayoutChild.flexible(name: "x", minWidth: .infinity, maxWidth: .infinity)
+        XCTAssertEqual(spacerish.width(for: .zero), 0, accuracy: 0.001)
+        XCTAssertTrue(spacerish.width(for: .infinity).isInfinite)
     }
 
     // MARK: - Edge cases
